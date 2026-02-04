@@ -1,5 +1,6 @@
 
 _G.SavedPositions = {}
+_G.TPMode = nil
 
 local function getPlayerByName(name)
     for _, player in pairs(game:GetService("Players"):GetPlayers()) do
@@ -100,7 +101,6 @@ local function createMainGUI()
     mainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     mainGui.ResetOnSpawn = false
 
-
     local iconButton = Instance.new("ImageButton")
     iconButton.Name = "MinimizedIcon"
     iconButton.Size = UDim2.new(0, 35, 0, 35)
@@ -120,8 +120,8 @@ local function createMainGUI()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, 200, 0, 280)
-    mainFrame.Position = UDim2.new(0.5, -100, 0.5, -140)
+    mainFrame.Size = UDim2.new(0, 200, 0, 310)
+    mainFrame.Position = UDim2.new(0.5, -100, 0.5, -155)
     mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     mainFrame.BorderColor3 = Color3.fromRGB(80, 255, 80)
     mainFrame.BorderSizePixel = 2
@@ -194,10 +194,73 @@ local function createMainGUI()
     headerLine.BorderSizePixel = 0
     headerLine.Parent = mainFrame
     
+    local modeFrame = Instance.new("Frame")
+    modeFrame.Name = "ModeFrame"
+    modeFrame.Size = UDim2.new(0.92, 0, 0, 26)
+    modeFrame.Position = UDim2.new(0.04, 0, 0, 32)
+    modeFrame.BackgroundTransparency = 1
+    modeFrame.Parent = mainFrame
+    
+    local fastButton = Instance.new("TextButton")
+    fastButton.Name = "FastButton"
+    fastButton.Size = UDim2.new(0.48, 0, 1, 0)
+    fastButton.Position = UDim2.new(0, 0, 0, 0)
+    fastButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    fastButton.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    fastButton.BorderSizePixel = 1
+    fastButton.Text = "FAST"
+    fastButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+    fastButton.Font = Enum.Font.GothamBold
+    fastButton.TextSize = 10
+    fastButton.Parent = modeFrame
+    
+    local fastCorner = Instance.new("UICorner")
+    fastCorner.CornerRadius = UDim.new(0, 4)
+    fastCorner.Parent = fastButton
+    
+    local petirButton = Instance.new("TextButton")
+    petirButton.Name = "PetirButton"
+    petirButton.Size = UDim2.new(0.48, 0, 1, 0)
+    petirButton.Position = UDim2.new(0.52, 0, 0, 0)
+    petirButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    petirButton.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    petirButton.BorderSizePixel = 1
+    petirButton.Text = "PETIR"
+    petirButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+    petirButton.Font = Enum.Font.GothamBold
+    petirButton.TextSize = 10
+    petirButton.Parent = modeFrame
+    
+    local petirCorner = Instance.new("UICorner")
+    petirCorner.CornerRadius = UDim.new(0, 4)
+    petirCorner.Parent = petirButton
+    
+    fastButton.MouseButton1Click:Connect(function()
+        _G.TPMode = "FAST"
+        fastButton.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
+        fastButton.TextColor3 = Color3.fromRGB(80, 255, 80)
+        fastButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+        
+        petirButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        petirButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+        petirButton.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    end)
+    
+    petirButton.MouseButton1Click:Connect(function()
+        _G.TPMode = "PETIR"
+        petirButton.BackgroundColor3 = Color3.fromRGB(100, 100, 25)
+        petirButton.TextColor3 = Color3.fromRGB(255, 255, 80)
+        petirButton.BorderColor3 = Color3.fromRGB(255, 255, 80)
+        
+        fastButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        fastButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+        fastButton.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    end)
+    
     local inputFrame = Instance.new("Frame")
     inputFrame.Name = "InputFrame"
     inputFrame.Size = UDim2.new(0.92, 0, 0, 30)
-    inputFrame.Position = UDim2.new(0.04, 0, 0, 32)
+    inputFrame.Position = UDim2.new(0.04, 0, 0, 63)
     inputFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     inputFrame.BorderColor3 = Color3.fromRGB(60, 60, 60)
     inputFrame.BorderSizePixel = 1
@@ -249,19 +312,19 @@ local function createMainGUI()
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Name = "StatusLabel"
     statusLabel.Size = UDim2.new(0.92, 0, 0, 18)
-    statusLabel.Position = UDim2.new(0.04, 0, 0, 67)
+    statusLabel.Position = UDim2.new(0.04, 0, 0, 98)
     statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = "Positions: 0"
+    statusLabel.Text = "Positions: 0 | Mode: NONE"
     statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextSize = 9
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = mainFrame
-    
+
     local listLine = Instance.new("Frame")
     listLine.Name = "ListLine"
     listLine.Size = UDim2.new(0.92, 0, 0, 1)
-    listLine.Position = UDim2.new(0.04, 0, 0, 88)
+    listLine.Position = UDim2.new(0.04, 0, 0, 119)
     listLine.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
     listLine.BorderSizePixel = 0
     listLine.Parent = mainFrame
@@ -269,7 +332,7 @@ local function createMainGUI()
     local posFrame = Instance.new("Frame")
     posFrame.Name = "PosFrame"
     posFrame.Size = UDim2.new(0.92, 0, 0, 165)
-    posFrame.Position = UDim2.new(0.04, 0, 0, 93)
+    posFrame.Position = UDim2.new(0.04, 0, 0, 124)
     posFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
     posFrame.BorderColor3 = Color3.fromRGB(40, 40, 40)
     posFrame.BorderSizePixel = 1
@@ -306,14 +369,44 @@ local function createMainGUI()
     creditLabel.Font = Enum.Font.Gotham
     creditLabel.TextSize = 9
     creditLabel.Parent = mainFrame
-
-
+    
     local function updateStatusLabel()
         local posCount = 0
         for _ in pairs(_G.SavedPositions) do
             posCount = posCount + 1
         end
-        statusLabel.Text = string.format("Positions: %d", posCount)
+        local modeText = _G.TPMode or "NONE"
+        statusLabel.Text = string.format("Positions: %d | Mode: %s", posCount, modeText)
+    end
+    
+    local function teleportToPosition(pos)
+        if not _G.TPMode then
+            return
+        end
+        
+        local player = game:GetService('Players').LocalPlayer
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        
+        if _G.TPMode == "PETIR" then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+        elseif _G.TPMode == "FAST" then
+            local hrp = player.Character.HumanoidRootPart
+            local distance = (hrp.Position - pos).Magnitude
+            local speed = 500
+            local time = distance / speed
+            
+            if time < 0.1 then time = 0.1 end
+            
+            local tween = game:GetService("TweenService"):Create(
+                hrp,
+                TweenInfo.new(time, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),
+                {CFrame = CFrame.new(pos)}
+            )
+            
+            tween:Play()
+        end
     end
     
     local function addPosToList(name, pos)
@@ -359,14 +452,22 @@ local function createMainGUI()
         tpCorner.Parent = tpButton
         
         tpButton.MouseButton1Click:Connect(function()
-            local player = game:GetService('Players').LocalPlayer
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+            if not _G.TPMode then
+                tpButton.Text = "?"
+                tpButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+                wait(0.5)
+                tpButton.Text = "TP"
+                tpButton.TextColor3 = Color3.fromRGB(80, 255, 80)
+                return
             end
+            
+            teleportToPosition(pos)
         end)
         
         tpButton.MouseEnter:Connect(function()
-            tpButton.BackgroundColor3 = Color3.fromRGB(35, 100, 35)
+            if _G.TPMode then
+                tpButton.BackgroundColor3 = Color3.fromRGB(35, 100, 35)
+            end
         end)
         
         tpButton.MouseLeave:Connect(function()
@@ -445,6 +546,13 @@ local function createMainGUI()
         end
     end)
     
+    spawn(function()
+        while true do
+            updateStatusLabel()
+            wait(0.5)
+        end
+    end)
+    
     updateStatusLabel()
     
     local isMinimized = false
@@ -464,7 +572,6 @@ local function createMainGUI()
             isMinimized = false
         end
     end)
-
 
     local UIS = game:GetService("UserInputService")
     local dragging = false
