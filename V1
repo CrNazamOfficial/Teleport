@@ -1,0 +1,551 @@
+
+_G.SavedPositions = {}
+
+local function getPlayerByName(name)
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        if string.lower(player.Name) == string.lower(name) or 
+           (player.DisplayName and string.lower(player.DisplayName) == string.lower(name)) then
+            return player
+        end
+    end
+    return nil
+end
+
+local function createNotification()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "TPNotification"
+    screenGui.Parent = game.CoreGui
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "Notification"
+    mainFrame.Size = UDim2.new(0, 180, 0, 60)
+    mainFrame.Position = UDim2.new(0.5, -90, 0.15, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    mainFrame.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    mainFrame.BorderSizePixel = 2
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0)
+    mainFrame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+    
+    local mainText = Instance.new("TextLabel")
+    mainText.Name = "MainText"
+    mainText.Size = UDim2.new(1, 0, 0.5, 0)
+    mainText.Position = UDim2.new(0, 0, 0.1, 0)
+    mainText.BackgroundTransparency = 1
+    mainText.Text = "Teleport Active"
+    mainText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    mainText.Font = Enum.Font.GothamBold
+    mainText.TextSize = 14
+    mainText.Parent = mainFrame
+    
+    local creditText = Instance.new("TextLabel")
+    creditText.Name = "CreditText"
+    creditText.Size = UDim2.new(1, 0, 0.4, 0)
+    creditText.Position = UDim2.new(0, 0, 0.55, 0)
+    creditText.BackgroundTransparency = 1
+    creditText.Text = "By: Nazam"
+    creditText.TextColor3 = Color3.fromRGB(180, 180, 180)
+    creditText.Font = Enum.Font.Gotham
+    creditText.TextSize = 11
+    creditText.Parent = mainFrame
+    
+    mainFrame.BackgroundTransparency = 1
+    mainFrame.Position = UDim2.new(0.5, -90, 0.1, -30)
+    
+    local fadeIn = game:GetService("TweenService"):Create(
+        mainFrame,
+        TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 0}
+    )
+    
+    local slideDown = game:GetService("TweenService"):Create(
+        mainFrame,
+        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, 0.2),
+        {Position = UDim2.new(0.5, -90, 0.15, 0)}
+    )
+    
+    fadeIn:Play()
+    slideDown:Play()
+    
+    wait(2.5)
+    
+    local fadeOut = game:GetService("TweenService"):Create(
+        mainFrame,
+        TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        {BackgroundTransparency = 1}
+    )
+    
+    local slideUp = game:GetService("TweenService"):Create(
+        mainFrame,
+        TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        {Position = UDim2.new(0.5, -90, 0.1, 0)}
+    )
+    
+    fadeOut:Play()
+    slideUp:Play()
+    
+    fadeOut.Completed:Connect(function()
+        screenGui:Destroy()
+    end)
+end
+
+local function createMainGUI()
+    local mainGui = Instance.new("ScreenGui")
+    mainGui.Name = "TeleportGUI"
+    mainGui.Parent = game.CoreGui
+    mainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    mainGui.ResetOnSpawn = false
+
+
+    local iconButton = Instance.new("ImageButton")
+    iconButton.Name = "MinimizedIcon"
+    iconButton.Size = UDim2.new(0, 35, 0, 35)
+    iconButton.Position = UDim2.new(0, 15, 0, 60)
+    iconButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    iconButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    iconButton.BorderSizePixel = 2
+    iconButton.Image = "rbxassetid://109307269006494"
+    iconButton.Visible = false
+    iconButton.Active = true
+    iconButton.Draggable = false
+    iconButton.Parent = mainGui
+    
+    local iconCorner = Instance.new("UICorner")
+    iconCorner.CornerRadius = UDim.new(0, 6)
+    iconCorner.Parent = iconButton
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 200, 0, 280)
+    mainFrame.Position = UDim2.new(0.5, -100, 0.5, -140)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    mainFrame.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    mainFrame.BorderSizePixel = 2
+    mainFrame.Active = true
+    mainFrame.Draggable = false
+    mainFrame.Visible = true
+    mainFrame.Parent = mainGui
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 8)
+    mainCorner.Parent = mainFrame
+    
+    local dragHandle = Instance.new("Frame")
+    dragHandle.Name = "DragHandle"
+    dragHandle.Size = UDim2.new(1, 0, 0, 25)
+    dragHandle.Position = UDim2.new(0, 0, 0, 0)
+    dragHandle.BackgroundTransparency = 1
+    dragHandle.Active = true
+    dragHandle.Parent = mainFrame
+    
+    local header = Instance.new("Frame")
+    header.Name = "Header"
+    header.Size = UDim2.new(1, 0, 0, 25)
+    header.Position = UDim2.new(0, 0, 0, 0)
+    header.BackgroundTransparency = 1
+    header.Parent = mainFrame
+    
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(0.75, 0, 1, 0)
+    title.Position = UDim2.new(0, 6, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "TELEPORT"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 12
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = header
+    
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 20, 0, 20)
+    closeButton.Position = UDim2.new(1, -23, 0.5, -10)
+    closeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    closeButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    closeButton.BorderSizePixel = 1
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 11
+    closeButton.Parent = header
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 4)
+    closeCorner.Parent = closeButton
+    
+    closeButton.MouseEnter:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    end)
+    
+    local headerLine = Instance.new("Frame")
+    headerLine.Name = "HeaderLine"
+    headerLine.Size = UDim2.new(0.92, 0, 0, 1)
+    headerLine.Position = UDim2.new(0.04, 0, 0, 26)
+    headerLine.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
+    headerLine.BorderSizePixel = 0
+    headerLine.Parent = mainFrame
+    
+    local inputFrame = Instance.new("Frame")
+    inputFrame.Name = "InputFrame"
+    inputFrame.Size = UDim2.new(0.92, 0, 0, 30)
+    inputFrame.Position = UDim2.new(0.04, 0, 0, 32)
+    inputFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    inputFrame.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    inputFrame.BorderSizePixel = 1
+    inputFrame.Parent = mainFrame
+    
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 4)
+    inputCorner.Parent = inputFrame
+    
+    local nameBox = Instance.new("TextBox")
+    nameBox.Name = "NameBox"
+    nameBox.Size = UDim2.new(0.68, 0, 0.85, 0)
+    nameBox.Position = UDim2.new(0.03, 0, 0.075, 0)
+    nameBox.BackgroundTransparency = 1
+    nameBox.Text = ""
+    nameBox.PlaceholderText = "Position Name..."
+    nameBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+    nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameBox.Font = Enum.Font.Gotham
+    nameBox.TextSize = 10
+    nameBox.TextXAlignment = Enum.TextXAlignment.Left
+    nameBox.Parent = inputFrame
+    
+    local saveButton = Instance.new("TextButton")
+    saveButton.Name = "SaveButton"
+    saveButton.Size = UDim2.new(0.26, 0, 0.85, 0)
+    saveButton.Position = UDim2.new(0.72, 0, 0.075, 0)
+    saveButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    saveButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    saveButton.BorderSizePixel = 1
+    saveButton.Text = "+"
+    saveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    saveButton.Font = Enum.Font.GothamBold
+    saveButton.TextSize = 14
+    saveButton.Parent = inputFrame
+    
+    local saveCorner = Instance.new("UICorner")
+    saveCorner.CornerRadius = UDim.new(0, 4)
+    saveCorner.Parent = saveButton
+    
+    saveButton.MouseEnter:Connect(function()
+        saveButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    end)
+    
+    saveButton.MouseLeave:Connect(function()
+        saveButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    end)
+    
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "StatusLabel"
+    statusLabel.Size = UDim2.new(0.92, 0, 0, 18)
+    statusLabel.Position = UDim2.new(0.04, 0, 0, 67)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Positions: 0"
+    statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextSize = 9
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = mainFrame
+    
+    local listLine = Instance.new("Frame")
+    listLine.Name = "ListLine"
+    listLine.Size = UDim2.new(0.92, 0, 0, 1)
+    listLine.Position = UDim2.new(0.04, 0, 0, 88)
+    listLine.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
+    listLine.BorderSizePixel = 0
+    listLine.Parent = mainFrame
+    
+    local posFrame = Instance.new("Frame")
+    posFrame.Name = "PosFrame"
+    posFrame.Size = UDim2.new(0.92, 0, 0, 165)
+    posFrame.Position = UDim2.new(0.04, 0, 0, 93)
+    posFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+    posFrame.BorderColor3 = Color3.fromRGB(40, 40, 40)
+    posFrame.BorderSizePixel = 1
+    posFrame.ClipsDescendants = true
+    posFrame.Parent = mainFrame
+    
+    local posCorner = Instance.new("UICorner")
+    posCorner.CornerRadius = UDim.new(0, 4)
+    posCorner.Parent = posFrame
+    
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Name = "ScrollFrame"
+    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollFrame.Position = UDim2.new(0, 0, 0, 0)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.BorderSizePixel = 0
+    scrollFrame.ScrollBarThickness = 4
+    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scrollFrame.Parent = posFrame
+    
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Name = "ListLayout"
+    listLayout.Padding = UDim.new(0, 3)
+    listLayout.Parent = scrollFrame
+    
+    local creditLabel = Instance.new("TextLabel")
+    creditLabel.Name = "CreditLabel"
+    creditLabel.Size = UDim2.new(1, 0, 0, 18)
+    creditLabel.Position = UDim2.new(0, 0, 1, -19)
+    creditLabel.BackgroundTransparency = 1
+    creditLabel.Text = "By: Nazam"
+    creditLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+    creditLabel.Font = Enum.Font.Gotham
+    creditLabel.TextSize = 9
+    creditLabel.Parent = mainFrame
+
+
+    local function updateStatusLabel()
+        local posCount = 0
+        for _ in pairs(_G.SavedPositions) do
+            posCount = posCount + 1
+        end
+        statusLabel.Text = string.format("Positions: %d", posCount)
+    end
+    
+    local function addPosToList(name, pos)
+        local posEntry = Instance.new("Frame")
+        posEntry.Name = "PosEntry_" .. name
+        posEntry.Size = UDim2.new(1, -6, 0, 28)
+        posEntry.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        posEntry.BorderColor3 = Color3.fromRGB(40, 40, 40)
+        posEntry.BorderSizePixel = 1
+        
+        local entryCorner = Instance.new("UICorner")
+        entryCorner.CornerRadius = UDim.new(0, 4)
+        entryCorner.Parent = posEntry
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "NameLabel"
+        nameLabel.Size = UDim2.new(0.5, 0, 1, 0)
+        nameLabel.Position = UDim2.new(0, 5, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = name
+        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        nameLabel.Font = Enum.Font.Gotham
+        nameLabel.TextSize = 9
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        nameLabel.Parent = posEntry
+        
+        local tpButton = Instance.new("TextButton")
+        tpButton.Name = "TPButton"
+        tpButton.Size = UDim2.new(0, 30, 0, 22)
+        tpButton.Position = UDim2.new(0.52, 0, 0.5, -11)
+        tpButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        tpButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+        tpButton.BorderSizePixel = 1
+        tpButton.Text = "TP"
+        tpButton.TextColor3 = Color3.fromRGB(80, 255, 80)
+        tpButton.Font = Enum.Font.GothamBold
+        tpButton.TextSize = 9
+        tpButton.Parent = posEntry
+        
+        local tpCorner = Instance.new("UICorner")
+        tpCorner.CornerRadius = UDim.new(0, 3)
+        tpCorner.Parent = tpButton
+        
+        tpButton.MouseButton1Click:Connect(function()
+            local player = game:GetService('Players').LocalPlayer
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+            end
+        end)
+        
+        tpButton.MouseEnter:Connect(function()
+            tpButton.BackgroundColor3 = Color3.fromRGB(35, 100, 35)
+        end)
+        
+        tpButton.MouseLeave:Connect(function()
+            tpButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        end)
+        
+        local removeButton = Instance.new("TextButton")
+        removeButton.Name = "RemoveButton"
+        removeButton.Size = UDim2.new(0, 22, 0, 22)
+        removeButton.Position = UDim2.new(1, -25, 0.5, -11)
+        removeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        removeButton.BorderColor3 = Color3.fromRGB(255, 50, 50)
+        removeButton.BorderSizePixel = 1
+        removeButton.Text = "X"
+        removeButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+        removeButton.Font = Enum.Font.GothamBold
+        removeButton.TextSize = 9
+        removeButton.Parent = posEntry
+        
+        local removeCorner = Instance.new("UICorner")
+        removeCorner.CornerRadius = UDim.new(0, 3)
+        removeCorner.Parent = removeButton
+        
+        removeButton.MouseButton1Click:Connect(function()
+            _G.SavedPositions[name] = nil
+            posEntry:Destroy()
+            updateStatusLabel()
+            scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+        end)
+        
+        removeButton.MouseEnter:Connect(function()
+            removeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+            removeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end)
+        
+        removeButton.MouseLeave:Connect(function()
+            removeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+            removeButton.TextColor3 = Color3.fromRGB(255, 50, 50)
+        end)
+        
+        posEntry.Parent = scrollFrame
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+        updateStatusLabel()
+        nameBox.Text = ""
+    end
+    
+    local function handleSavePosition()
+        local inputText = string.gsub(nameBox.Text, "^%s*(.-)%s*$", "%1")
+        
+        if inputText == "" then
+            return
+        end
+        
+        if _G.SavedPositions[inputText] then
+            nameBox.Text = "EXISTS!"
+            nameBox.TextColor3 = Color3.fromRGB(255, 50, 50)
+            wait(1)
+            nameBox.Text = ""
+            nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+            return
+        end
+        
+        local player = game:GetService('Players').LocalPlayer
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = player.Character.HumanoidRootPart.Position
+            _G.SavedPositions[inputText] = pos
+            addPosToList(inputText, pos)
+        end
+    end
+    
+    saveButton.MouseButton1Click:Connect(handleSavePosition)
+    
+    nameBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            handleSavePosition()
+        end
+    end)
+    
+    updateStatusLabel()
+    
+    local isMinimized = false
+    
+    closeButton.MouseButton1Click:Connect(function()
+        if not isMinimized then
+            mainFrame.Visible = false
+            iconButton.Visible = true
+            isMinimized = true
+        end
+    end)
+    
+    iconButton.MouseButton1Click:Connect(function()
+        if isMinimized then
+            mainFrame.Visible = true
+            iconButton.Visible = false
+            isMinimized = false
+        end
+    end)
+
+
+    local UIS = game:GetService("UserInputService")
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    local iconDragging = false
+    local iconDragStart = nil
+    local iconStartPos = nil
+    local dragThreshold = 5
+    local iconDragMoved = false
+    
+    iconButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            iconDragging = true
+            iconDragStart = input.Position
+            iconStartPos = iconButton.Position
+            iconDragMoved = false
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    iconDragging = false
+                    
+                    if not iconDragMoved and isMinimized then
+                        mainFrame.Visible = true
+                        iconButton.Visible = false
+                        isMinimized = false
+                    end
+                end
+            end)
+        end
+    end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if iconDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - iconDragStart
+            
+            if math.abs(delta.X) > dragThreshold or math.abs(delta.Y) > dragThreshold then
+                iconDragMoved = true
+            end
+            
+            iconButton.Position = UDim2.new(
+                iconStartPos.X.Scale,
+                iconStartPos.X.Offset + delta.X,
+                iconStartPos.Y.Scale,
+                iconStartPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    return mainGui
+end
+
+createNotification()
+createMainGUI()
+
+print("Teleport System Loaded!")
+print("By: Nazam")
