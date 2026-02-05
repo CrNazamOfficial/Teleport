@@ -12,6 +12,24 @@ local function getPlayerByName(name)
     return nil
 end
 
+local function saveToFile()
+    local data = {
+        positions = _G.SavedPositions,
+        mode = _G.TPMode
+    }
+    writefile("teleport_save.json", game:GetService("HttpService"):JSONEncode(data))
+end
+
+local function loadFromFile()
+    if isfile("teleport_save.json") then
+        local data = game:GetService("HttpService"):JSONDecode(readfile("teleport_save.json"))
+        _G.SavedPositions = data.positions or {}
+        _G.TPMode = data.mode
+        return true
+    end
+    return false
+end
+
 local function createNotification()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "TPNotification"
@@ -91,6 +109,116 @@ local function createNotification()
     
     fadeOut.Completed:Connect(function()
         screenGui:Destroy()
+    end)
+end
+
+local function createConfirmDialog(name, onYes)
+    local confirmGui = Instance.new("ScreenGui")
+    confirmGui.Name = "ConfirmDialog"
+    confirmGui.Parent = game.CoreGui
+    confirmGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local overlay = Instance.new("Frame")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 0.5
+    overlay.BorderSizePixel = 0
+    overlay.Parent = confirmGui
+    
+    local dialog = Instance.new("Frame")
+    dialog.Size = UDim2.new(0, 220, 0, 110)
+    dialog.Position = UDim2.new(0.5, -110, 0.5, -55)
+    dialog.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    dialog.BorderColor3 = Color3.fromRGB(255, 80, 80)
+    dialog.BorderSizePixel = 2
+    dialog.Parent = confirmGui
+    
+    local dialogCorner = Instance.new("UICorner")
+    dialogCorner.CornerRadius = UDim.new(0, 8)
+    dialogCorner.Parent = dialog
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -10, 0, 25)
+    titleLabel.Position = UDim2.new(0, 5, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "Konfirmasi Hapus"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 11
+    titleLabel.Parent = dialog
+    
+    local messageLabel = Instance.new("TextLabel")
+    messageLabel.Size = UDim2.new(1, -10, 0, 40)
+    messageLabel.Position = UDim2.new(0, 5, 0, 30)
+    messageLabel.BackgroundTransparency = 1
+    messageLabel.Text = string.format('Apakah Kamu Yakin Akan Menghapus "%s"?', name)
+    messageLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    messageLabel.Font = Enum.Font.Gotham
+    messageLabel.TextSize = 9
+    messageLabel.TextWrapped = true
+    messageLabel.Parent = dialog
+    
+    local buttonFrame = Instance.new("Frame")
+    buttonFrame.Size = UDim2.new(1, -10, 0, 28)
+    buttonFrame.Position = UDim2.new(0, 5, 1, -33)
+    buttonFrame.BackgroundTransparency = 1
+    buttonFrame.Parent = dialog
+    
+    local yesButton = Instance.new("TextButton")
+    yesButton.Size = UDim2.new(0.48, 0, 1, 0)
+    yesButton.Position = UDim2.new(0, 0, 0, 0)
+    yesButton.BackgroundColor3 = Color3.fromRGB(100, 25, 25)
+    yesButton.BorderColor3 = Color3.fromRGB(255, 80, 80)
+    yesButton.BorderSizePixel = 1
+    yesButton.Text = "YES"
+    yesButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    yesButton.Font = Enum.Font.GothamBold
+    yesButton.TextSize = 10
+    yesButton.Parent = buttonFrame
+    
+    local yesCorner = Instance.new("UICorner")
+    yesCorner.CornerRadius = UDim.new(0, 4)
+    yesCorner.Parent = yesButton
+    
+    local noButton = Instance.new("TextButton")
+    noButton.Size = UDim2.new(0.48, 0, 1, 0)
+    noButton.Position = UDim2.new(0.52, 0, 0, 0)
+    noButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    noButton.BorderColor3 = Color3.fromRGB(80, 80, 80)
+    noButton.BorderSizePixel = 1
+    noButton.Text = "NO"
+    noButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    noButton.Font = Enum.Font.GothamBold
+    noButton.TextSize = 10
+    noButton.Parent = buttonFrame
+    
+    local noCorner = Instance.new("UICorner")
+    noCorner.CornerRadius = UDim.new(0, 4)
+    noCorner.Parent = noButton
+    
+    yesButton.MouseEnter:Connect(function()
+        yesButton.BackgroundColor3 = Color3.fromRGB(150, 35, 35)
+    end)
+    
+    yesButton.MouseLeave:Connect(function()
+        yesButton.BackgroundColor3 = Color3.fromRGB(100, 25, 25)
+    end)
+    
+    noButton.MouseEnter:Connect(function()
+        noButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end)
+    
+    noButton.MouseLeave:Connect(function()
+        noButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    end)
+    
+    yesButton.MouseButton1Click:Connect(function()
+        onYes()
+        confirmGui:Destroy()
+    end)
+    
+    noButton.MouseButton1Click:Connect(function()
+        confirmGui:Destroy()
     end)
 end
 
@@ -244,6 +372,8 @@ local function createMainGUI()
         petirButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
         petirButton.TextColor3 = Color3.fromRGB(150, 150, 150)
         petirButton.BorderColor3 = Color3.fromRGB(60, 60, 60)
+        
+        saveToFile()
     end)
     
     petirButton.MouseButton1Click:Connect(function()
@@ -255,6 +385,8 @@ local function createMainGUI()
         fastButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
         fastButton.TextColor3 = Color3.fromRGB(150, 150, 150)
         fastButton.BorderColor3 = Color3.fromRGB(60, 60, 60)
+        
+        saveToFile()
     end)
     
     local inputFrame = Instance.new("Frame")
@@ -532,10 +664,13 @@ local function createMainGUI()
         removeCorner.Parent = removeButton
         
         removeButton.MouseButton1Click:Connect(function()
-            _G.SavedPositions[name] = nil
-            posEntry:Destroy()
-            updateStatusLabel()
-            scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+            createConfirmDialog(name, function()
+                _G.SavedPositions[name] = nil
+                posEntry:Destroy()
+                updateStatusLabel()
+                scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+                saveToFile()
+            end)
         end)
         
         removeButton.MouseEnter:Connect(function()
@@ -575,6 +710,7 @@ local function createMainGUI()
             local pos = player.Character.HumanoidRootPart.Position
             _G.SavedPositions[inputText] = pos
             addPosToList(inputText, pos)
+            saveToFile()
         end
     end
     
@@ -585,6 +721,22 @@ local function createMainGUI()
             handleSavePosition()
         end
     end)
+    
+    if loadFromFile() then
+        for name, pos in pairs(_G.SavedPositions) do
+            addPosToList(name, pos)
+        end
+        
+        if _G.TPMode == "FAST" then
+            fastButton.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
+            fastButton.TextColor3 = Color3.fromRGB(80, 255, 80)
+            fastButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+        elseif _G.TPMode == "PETIR" then
+            petirButton.BackgroundColor3 = Color3.fromRGB(100, 100, 25)
+            petirButton.TextColor3 = Color3.fromRGB(255, 255, 80)
+            petirButton.BorderColor3 = Color3.fromRGB(255, 255, 80)
+        end
+    end
     
     spawn(function()
         while true do
