@@ -389,10 +389,37 @@ local function createMainGUI()
             return
         end
         
+        local hrp = player.Character.HumanoidRootPart
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        
+        local oldMaxHealth = humanoid.MaxHealth
+        
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+        hrp.Anchored = true
+        
+        for _, part in pairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+        
         if _G.TPMode == "PETIR" then
-            player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+            hrp.CFrame = CFrame.new(pos)
+            
+            wait(0.5)
+            
+            hrp.Anchored = false
+            humanoid.MaxHealth = oldMaxHealth
+            humanoid.Health = oldMaxHealth
+            
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                    part.CanCollide = true
+                end
+            end
+            
         elseif _G.TPMode == "FAST" then
-            local hrp = player.Character.HumanoidRootPart
             local distance = (hrp.Position - pos).Magnitude
             local speed = 500
             local time = distance / speed
@@ -406,6 +433,19 @@ local function createMainGUI()
             )
             
             tween:Play()
+            tween.Completed:Connect(function()
+                wait(0.5)
+                
+                hrp.Anchored = false
+                humanoid.MaxHealth = oldMaxHealth
+                humanoid.Health = oldMaxHealth
+                
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.CanCollide = true
+                    end
+                end
+            end)
         end
     end
     
