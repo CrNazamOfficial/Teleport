@@ -1,28 +1,65 @@
-
 _G.SavedPositions = {}
 _G.TPMode = nil
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
+-- Save Function
 local function saveToFile()
+    if not writefile then
+        warn("Exploit doesn't support writefile!")
+        return false
+    end
+    
     local data = {
         positions = _G.SavedPositions,
         mode = _G.TPMode
     }
-    writefile("teleport_save.json", HttpService:JSONEncode(data))
+    
+    local success, err = pcall(function()
+        writefile("teleport_save.json", HttpService:JSONEncode(data))
+    end)
+    
+    if success then
+        print("[TP Save] ✓ Saved successfully!")
+        return true
+    else
+        warn("[TP Save] ✗ Failed:", err)
+        return false
+    end
 end
 
+-- Load Function
 local function loadFromFile()
+    if not readfile or not isfile then
+        warn("Exploit doesn't support readfile/isfile!")
+        return false
+    end
+    
     if isfile("teleport_save.json") then
-        pcall(function()
+        local success, result = pcall(function()
             local data = HttpService:JSONDecode(readfile("teleport_save.json"))
             _G.SavedPositions = data.positions or {}
             _G.TPMode = data.mode
+            
+            local count = 0
+            for _ in pairs(_G.SavedPositions) do count = count + 1 end
+            
+            print("[TP Load] ✓ Loaded", count, "positions")
+            print("[TP Load] ✓ Mode:", _G.TPMode or "NONE")
             return true
         end)
+        
+        if success then
+            return result
+        else
+            warn("[TP Load] ✗ Failed to load save file!")
+            return false
+        end
+    else
+        print("[TP Load] No save file found, starting fresh")
+        return false
     end
-    return false
 end
 
 local function createNotification()
@@ -274,7 +311,7 @@ local function createMainGUI()
     
     local title = Instance.new("TextLabel")
     title.Name = "Title"
-    title.Size = UDim2.new(0.75, 0, 1, 0)
+    title.Size = UDim2.new(0.6, 0, 1, 0)
     title.Position = UDim2.new(0, 6, 0, 0)
     title.BackgroundTransparency = 1
     title.Text = "TELEPORT"
@@ -283,6 +320,24 @@ local function createMainGUI()
     title.TextSize = 12
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = header
+    
+    -- TOMBOL SAVE MANUAL
+    local saveManualButton = Instance.new("TextButton")
+    saveManualButton.Name = "SaveManualButton"
+    saveManualButton.Size = UDim2.new(0, 35, 0, 18)
+    saveManualButton.Position = UDim2.new(1, -60, 0.5, -9)
+    saveManualButton.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
+    saveManualButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    saveManualButton.BorderSizePixel = 1
+    saveManualButton.Text = "SAVE"
+    saveManualButton.TextColor3 = Color3.fromRGB(80, 255, 80)
+    saveManualButton.Font = Enum.Font.GothamBold
+    saveManualButton.TextSize = 8
+    saveManualButton.Parent = header
+    
+    local saveCorner2 = Instance.new("UICorner")
+    saveCorner2.CornerRadius = UDim.new(0, 3)
+    saveCorner2.Parent = saveManualButton
     
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
@@ -448,7 +503,6 @@ local function createMainGUI()
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = mainFrame
 
-
     local listLine = Instance.new("Frame")
     listLine.Name = "ListLine"
     listLine.Size = UDim2.new(0.92, 0, 0, 1)
@@ -577,6 +631,23 @@ local function createMainGUI()
         end
     end
     
+    -- Function to refresh/update list
+    local function refreshList()
+        -- Clear existing entries
+        for _, child in pairs(scrollFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        
+        -- Re-add all positions from _G.SavedPositions
+        for name, pos in pairs(_G.SavedPositions) do
+            addPosToList(name, pos)
+        end
+        
+        updateStatusLabel()
+    end
+    
     local function addPosToList(name, pos)
         local posEntry = Instance.new("Frame")
         posEntry.Name = "PosEntry_" .. name
@@ -693,11 +764,22 @@ local function createMainGUI()
         end
         
         if _G.SavedPositions[inputText] then
-            nameBox.Text = "EXISTS!"
-            nameBox.TextColor3 = Color3.fromRGB(255, 50, 50)
-            wait(1)
-            nameBox.Text = ""
-            nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+            -- UPDATE POSITION YANG SUDAH ADA
+            local player = game:GetService('Players').LocalPlayer
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local pos = player.Character.HumanoidRootPart.Position
+                _G.SavedPositions[inputText] = pos
+                
+                -- Refresh list untuk update
+                refreshList()
+                saveToFile()
+                
+                nameBox.Text = "UPDATED!"
+                nameBox.TextColor3 = Color3.fromRGB(80, 255, 80)
+                wait(1)
+                nameBox.Text = ""
+                nameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
             return
         end
         
@@ -718,6 +800,40 @@ local function createMainGUI()
         end
     end)
     
+    -- TOMBOL SAVE MANUAL CLICK HANDLER
+    saveManualButton.MouseButton1Click:Connect(function()
+        local success = saveToFile()
+        if success then
+            -- Visual feedback
+            saveManualButton.Text = "✓"
+            saveManualButton.BackgroundColor3 = Color3.fromRGB(35, 120, 35)
+            wait(0.5)
+            saveManualButton.Text = "SAVE"
+            saveManualButton.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
+            
+            -- Refresh list dari file
+            loadFromFile()
+            refreshList()
+        else
+            saveManualButton.Text = "✗"
+            saveManualButton.BackgroundColor3 = Color3.fromRGB(120, 25, 25)
+            saveManualButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+            wait(0.5)
+            saveManualButton.Text = "SAVE"
+            saveManualButton.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
+            saveManualButton.TextColor3 = Color3.fromRGB(80, 255, 80)
+        end
+    end)
+    
+    saveManualButton.MouseEnter:Connect(function()
+        saveManualButton.BackgroundColor3 = Color3.fromRGB(35, 120, 35)
+    end)
+    
+    saveManualButton.MouseLeave:Connect(function()
+        saveManualButton.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
+    end)
+    
+    -- LOAD SAVED DATA ON STARTUP
     if loadFromFile() then
         for name, pos in pairs(_G.SavedPositions) do
             addPosToList(name, pos)
@@ -842,5 +958,9 @@ end
 createNotification()
 createMainGUI()
 
-print("Teleport System Loaded!")
-print("By: Nazam")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("  Teleport System Loaded!")
+print("  By: Nazam")
+print("  ✓ Auto-Save: ACTIVE")
+print("  ✓ Auto-Load: ACTIVE")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━")
