@@ -2,30 +2,25 @@
 _G.SavedPositions = {}
 _G.TPMode = nil
 
-local function getPlayerByName(name)
-    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-        if string.lower(player.Name) == string.lower(name) or 
-           (player.DisplayName and string.lower(player.DisplayName) == string.lower(name)) then
-            return player
-        end
-    end
-    return nil
-end
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 
 local function saveToFile()
     local data = {
         positions = _G.SavedPositions,
         mode = _G.TPMode
     }
-    writefile("teleport_save.json", game:GetService("HttpService"):JSONEncode(data))
+    writefile("teleport_save.json", HttpService:JSONEncode(data))
 end
 
 local function loadFromFile()
     if isfile("teleport_save.json") then
-        local data = game:GetService("HttpService"):JSONDecode(readfile("teleport_save.json"))
-        _G.SavedPositions = data.positions or {}
-        _G.TPMode = data.mode
-        return true
+        pcall(function()
+            local data = HttpService:JSONDecode(readfile("teleport_save.json"))
+            _G.SavedPositions = data.positions or {}
+            _G.TPMode = data.mode
+            return true
+        end)
     end
     return false
 end
@@ -452,6 +447,7 @@ local function createMainGUI()
     statusLabel.TextSize = 9
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = mainFrame
+
 
     local listLine = Instance.new("Frame")
     listLine.Name = "ListLine"
